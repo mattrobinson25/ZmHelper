@@ -5,6 +5,7 @@ from threading import BoundedSemaphore
 from admintools import MyLogger, byte_sizer
 from shutil import copytree, rmtree, make_archive
 from threading import Thread
+from logging import Logger
 
 
 # Zm-Move. user defined vars
@@ -36,7 +37,7 @@ db_file : str = f'{working_dir}/zm_size.db'
 today_date : str = dt.strftime(dt.now(), '%Y-%m-%d')  # YYYY-MM-DD
 
 
-logger: MyLogger = MyLogger(
+logger: Logger = MyLogger(
     name='zm_mover',
     to_file='/var/log/zm_move.log',
     to_console=False,
