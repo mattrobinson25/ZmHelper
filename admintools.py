@@ -27,20 +27,20 @@ class Servers:
             self.nfs_unmount()
 
     def __init__(self,
-                 ip: str,
-                 user: str,
-                 port: int=22,
+                 ip : str,
+                 user : str,
+                 port : int=22,
                  nfs_path: str | None=None,
-                 check_connection: bool=True):
+                 check_connection : bool=True):
 
         self.subprocess_exceptions = (subprocess.CalledProcessError, subprocess.SubprocessError)
-        self.ip = ip              # IP Address of remote server
-        self.port = port		  # ssh port (default 22)
-        self.user = user  		  # username on remote server
-        self.nfs_path = nfs_path  # Path to nfs directory on server (default None)
+        self.ip : str = ip              # IP Address of remote server
+        self.port : int = port		  # ssh port (default 22)
+        self.user : str = user  		  # username on remote server
+        self.nfs_path : str = nfs_path  # Path to nfs directory on server (default None)
         self.mount_point = None   # Path to nfs mount point on client
-        self.is_mounted = False   # Is nfs directory currently mounted on client?
-        self.is_alive = False     # Will ping server to see if there is a connection
+        self.is_mounted : bool = False   # Is nfs directory currently mounted on client?
+        self.is_alive : bool = False     # Will ping server to see if there is a connection
 
         if check_connection:
             """Test for a stable network connection. If it passes, self.is_alive will be set to True"""
@@ -61,15 +61,15 @@ class Servers:
         '''
 
     def run(self, cmd: str):
-        cmd_list = cmd.split()
-        destination = f'{self.user}@{self.ip}'
-        ssh_arg = f'-p {self.port}'
-        args_list = ['ssh', ssh_arg, destination]
+        cmd_list : list[str] = cmd.split()
+        destination : str = f'{self.user}@{self.ip}'
+        ssh_arg : str = f'-p {self.port}'
+        args_list : list[str] = ['ssh', ssh_arg, destination]
 
         args_list.extend(cmd_list)  # Concat args_list with cmd_list
 
         try:
-            proc = subprocess.run(
+            proc : subprocess.CompletedProcess[str] = subprocess.run(
                 args=args_list,
                 check=True,
                 text=True,
@@ -77,70 +77,70 @@ class Servers:
             )
             return proc
 
-        except self.subprocess_exceptions as e:
+        except self.subprocess_exceptions as error:
             print('\nAn error occurred.')
-            print(e)
-            return e
+            print(error)
+            return error
 
     def send_file(self, client_path: str, server_path: str | None=None):
         if server_path is None:
-            server_path = f'/home/{self.user}'
+            server_path : str = f'/home/{self.user}'
 
-        target = client_path
-        destination = f"{self.user}@{self.ip}:/{server_path}"
-        ssh_arg = f"ssh -p {self.port}"
+        target : str = client_path
+        destination : str = f"{self.user}@{self.ip}:/{server_path}"
+        ssh_arg : str = f"ssh -p {self.port}"
 
         try:
-            proc = subprocess.run(
+            proc : subprocess.CompletedProcess[bytes] = subprocess.run(
                 args=['rsync', '-avrP', target, '-e', ssh_arg,  destination],
                 check=True
             )
             return proc
-        except self.subprocess_exceptions as e:
+        except self.subprocess_exceptions as error:
             print('An error occurred.')
-            print(e)
-            return e
+            print(error)
+            return error
 
     def receive_file(self, server_path: str, client_path: str=getcwd()):
-        target = f'{self.user}@{self.ip}:/{server_path}'
-        destination = client_path
-        ssh_arg = f"ssh -p {self.port}"
+        target : str = f'{self.user}@{self.ip}:/{server_path}'
+        destination : str = client_path
+        ssh_arg : str = f"ssh -p {self.port}"
 
         try:
-            proc = subprocess.run(
+            proc : subprocess.CompletedProcess[bytes] = subprocess.run(
                 args=['rsync', '-avrP', '-e', ssh_arg, target, destination],
                 check=True
             )
             return proc
 
-        except self.subprocess_exceptions as e:
+        except self.subprocess_exceptions as error:
             print('An error occurred.')
-            print(e)
-            return e
+            print(error)
+            return error
 
     def nfs_mount(self, mount_path: str):
         if ismount(mount_path):
             print(f'Directory {mount_path} is already mounted.')
         else:
-            target = f'{self.ip}:{self.nfs_path}'
-            destination = mount_path
+            target : str = f'{self.ip}:{self.nfs_path}'
+            destination : str = mount_path
 
             if self.nfs_path is None:
                 print('NFS has not been set up for this server.')
             else:
                 if self.is_mounted is False:
                     try:
-                        proc = subprocess.run(
+                        proc : subprocess.CompletedProcess[bytes] = subprocess.run(
                             args=['sudo', 'mount', target, destination],
                             check=True
                         )
-                        self.mount_point = mount_path
-                        self.is_mounted = True
+                        self.mount_point : str = mount_path
+                        self.is_mounted : bool = True
                         return proc
-                    except self.subprocess_exceptions as e:
+                    except self.subprocess_exceptions as error:
                         print('An error occurred.')
-                        print(e)
-                        return e
+                        print(error)
+                        return error
 
                 else:
                     print('NFS is already being used for this server. Unmount first.')
@@ -148,25 +148,25 @@ class Servers:
 
     def nfs_unmount(self):
         try:
-            proc = subprocess.run(
+            proc : subprocess.CompletedProcess[bytes] = subprocess.run(
                 args=['sudo', 'umount', self.mount_point],
                 check=True
             )
-            self.mount_point = None
-            self.is_mounted = False
+            self.mount_point : None | str = None
+            self.is_mounted : bool = False
             return proc
-        except self.subprocess_exceptions as e:
+        except self.subprocess_exceptions as error:
             print('An error occurred.')
-            print(e)
-            return e
+            print(error)
+            return error
 
     def ping(self, packets: int=5):
         try:
-            proc = subprocess.run(
+            proc : subprocess.CompletedProcess[bytes] = subprocess.run(
                 args=['ping', '-c', str(packets), self.ip],
                 check=True
             )
-            self.is_alive = True
+            self.is_alive : bool = True
 
             print('''
             
@@ -174,55 +174,55 @@ class Servers:
             
             ''')
             return proc
-        except self.subprocess_exceptions as e:
+        except self.subprocess_exceptions as error:
             print(f'Could not ping {self.ip} - The server is unreachable.')
-            self.is_alive = False
-            return e
+            self.is_alive : bool = False
+            return error
 
     def disk_free(self, device: str, ssh_arg: str | None=None, port: int=22) -> int:
-        target = f'{self.user}@{self.ip}'
+        target : str = f'{self.user}@{self.ip}'
 
         if ssh_arg:
-            ssh_arg = f'-o {ssh_arg}'
+            ssh_arg : str = f'-o {ssh_arg}'
             try:
-                cmd_out = subprocess.run(
+                cmd_out : str = subprocess.run(
                     args=['ssh', f'-p {port}', ssh_arg, target, 'df', device, '--output=pcent'],
                     text=True,
                     capture_output=True,
                     check=True
                 ).stdout
 
-                usage_int = int(
+                usage_int : int = int(
                     cmd_out.split()[1][:-1]
                 )
 
                 print(f'Device {device} usage at {usage_int}%')
                 return usage_int
-            except self.subprocess_exceptions as e:
+            except self.subprocess_exceptions as error:
                 print('An error occurred.')
-                print(e)
-                return e
+                print(error)
+                return error
 
         else:
             try:
-                cmd_out = subprocess.run(
+                cmd_out : str = subprocess.run(
                     args=['ssh', f'-p {port}', target, 'df', device, '--output=pcent'],
                     text=True,
                     capture_output=True,
                     check=True
                 ).stdout
 
-                usage_int = int(
+                usage_int : int = int(
                     cmd_out.split()[1][:-1]
                 )
 
                 print(f'Device {device} usage at {usage_int}%')
                 return usage_int
 
-            except self.subprocess_exceptions as e:
+            except self.subprocess_exceptions as error:
                 print('An error occurred.')
-                print(e)
-                return e
+                print(error)
+                return error
 
 
 class DiskMount:
@@ -234,7 +234,7 @@ class DiskMount:
 
     class DiskMountError(Exception):
         def __init__(self, message='Disk mount failed'):
-            self.message = message
+            self.message : str = message
             super().__init__(self.message)
 
     def __enter__(self):
@@ -245,11 +245,11 @@ class DiskMount:
             self.unmount()
 
     def __init__(self, uuid: str):
-        self.uuid = uuid
-        self.is_mounted = False
-        self.mount_point = None
+        self.uuid : str = uuid
+        self.is_mounted : bool = False
+        self.mount_point : None = None
 
-        self.source = subprocess.run(
+        self.source : str = subprocess.run(
             args=['blkid', '-o', 'value', '-U', self.uuid],
             text=True,
             capture_output=True,
@@ -266,52 +266,50 @@ class DiskMount:
 
     def mount(self, mount_point:str , options:str | None=None):
         if ismount(mount_point):
-            self.is_mounted = False
-            self.mount_point = None
+            self.is_mounted : bool = False
+            self.mount_point : None = None
 
             raise self.DiskMountError(message=f'Mount point {mount_point} is already taken')
         else:
             if options:
-                args = ['sudo', 'mount', '-o', options, '-U', self.uuid, mount_point]
+                args : list[str] = ['sudo', 'mount', '-o', options, '-U', self.uuid, mount_point]
             else:
-                args = ['sudo', 'mount', '-U', self.uuid, mount_point]
+                args : list[str] = ['sudo', 'mount', '-U', self.uuid, mount_point]
 
-            proc_return = subprocess.run(
+            proc_return : subprocess.CompletedProcess[str] = subprocess.run(
                 args=args,
                 text=True,
                 capture_output=True,
                 check=True
             )
-            self.is_mounted = True
-            self.mount_point = mount_point
+            self.is_mounted : bool = True
+            self.mount_point : None | str = mount_point
 
             return proc_return
 
     def unmount(self):
-        proc_return = subprocess.run(
+        proc_return : subprocess.CompletedProcess[str] = subprocess.run(
             args=['sudo', 'umount', self.mount_point],
             text=True,
             capture_output=True,
             check=True
         )
-        self.mount_point = None
-        self.is_mounted = False
-
+        self.mount_point : None | str = None
+        self.is_mounted : bool = False
         return proc_return
 
     def disk_usage(self) -> int:
         """Percent used on disk partition"""
         if self.is_mounted:
-            df_percent_free = subprocess.run(
+            df_percent_free : str = subprocess.run(
                 args=['df', self.source, '--output=pcent'],
                 text=True,
                 capture_output=True,
                 check=True
             ).stdout
 
-            df_percent_free_int = int(df_percent_free.split()[-1][:-1])
+            df_percent_free_int : int = int(df_percent_free.split()[-1][:-1])
             return df_percent_free_int
-
         else:
             raise self.DiskMountError(
                 message='Disk must be mounted before calling disk_usage()'
@@ -320,14 +318,14 @@ class DiskMount:
     def disk_size(self) -> int:
         """Total size of formatted space on disk partition"""
         if self.is_mounted:
-            df_total_size = subprocess.run(
+            df_total_size : str = subprocess.run(
                 args=['df', self.source, '--output=size'],
                 text=True,
                 capture_output=True,
                 check=True
             ).stdout
 
-            df_total_size = int(df_total_size.split()[-1][:-1])
+            df_total_size : int = int(df_total_size.split()[-1][:-1])
             return df_total_size * 1024
 
         else:
@@ -338,14 +336,14 @@ class DiskMount:
     def disk_available(self) -> int:
         """Show how much space is available on disk partition"""
         if self.is_mounted:
-            avail = subprocess.run(
+            avail : str = subprocess.run(
                 args=['df', self.source, '--output=avail'],
                 text=True,
                 capture_output=True,
                 check=True
             ).stdout
 
-            avail_int: int = int(avail.split()[-1])  # Gives back how many 1k block sizes
+            avail_int : int = int(avail.split()[-1])  # Gives back how many 1k block sizes
             return avail_int * 1024
         else:
             raise self.DiskMountError(
@@ -355,14 +353,14 @@ class DiskMount:
     def disk_used(self) -> int:
         """Show how much space is used on disk partition"""
         if self.is_mounted:
-            used = subprocess.run(
+            used : str = subprocess.run(
                 args=['df', self.source, '--output=used'],
                 text=True,
                 capture_output=True,
                 check=True
             ).stdout
             
-            used_int: int = int(used.split()[-1])
+            used_int : int = int(used.split()[-1])
             return used_int * 1024
         else:
             raise self.DiskMountError(
@@ -371,9 +369,9 @@ class DiskMount:
 
     def find_mountpoint(self) -> str:
         """Checks to see if disk partition is already mounted"""
-        mount_point = None
+        mount_point : None = None
 
-        mount_output = subprocess.run(
+        mount_output : list[str] = subprocess.run(
             args=['mount'],
             capture_output=True,
             text=True
@@ -381,17 +379,17 @@ class DiskMount:
 
         for line in mount_output:
             if self.source in line:
-                line_elements = line.split()
-                mount_point = line_elements[2]
+                line_elements : list[str] = line.split()
+                mount_point : str = line_elements[2]
                 break
 
         if mount_point:
-            self.mount_point = mount_point
-            self.is_mounted = True
+            self.mount_point : str = mount_point
+            self.is_mounted : bool = True
             return mount_point
         else:
-            self.mount_point = None
-            self.is_mounted = False
+            self.mount_point : None | str = None
+            self.is_mounted : bool = False
             raise self.DiskMountError(
                 message='Disk must be mounted before calling find_mountpoint().'
             )
@@ -401,35 +399,35 @@ def byte_sizer(file_size: int, round_digit: int=2) -> str:
     """Get a human-readable string based on very large integers representing the size of a file or directory. Numbers
     like 1024 will be represented as 1 Mb"""
 
-    kilobyte = 10**3
-    megabyte = 10**6
-    gigabyte = 10**9
-    terabyte = 10**12
-    petabyte = 10**15
+    kilobyte : int = 10**3
+    megabyte : int = 10**6
+    gigabyte : int = 10**9
+    terabyte : int = 10**12
+    petabyte : int = 10**15
 
     if isnan(file_size):
-        file_size = 0
+        file_size : int = 0
 
     if file_size < kilobyte:
-        exponent = 0
-        byte_type = 'Bytes'
+        exponent : int = 0
+        byte_type : str = 'Bytes'
     elif kilobyte <= file_size < megabyte:
-        exponent = 1
-        byte_type = 'Kb'
+        exponent : int = 1
+        byte_type : str = 'Kb'
     elif megabyte <= file_size < gigabyte:
-        exponent = 2
-        byte_type = 'Mb'
+        exponent : int = 2
+        byte_type : str = 'Mb'
     elif gigabyte <= file_size < terabyte:
-        exponent = 3
-        byte_type = 'Gb'
+        exponent : int = 3
+        byte_type : str = 'Gb'
     elif terabyte <= file_size < petabyte:
-        exponent = 4
-        byte_type = 'Tb'
+        exponent : int = 4
+        byte_type : str = 'Tb'
     else:
-        exponent = 5
-        byte_type = 'Pb'
+        exponent : int = 5
+        byte_type : str = 'Pb'
 
-    byte_size = round(
+    byte_size : float = round(
         number=(file_size / 1024 ** exponent),
         ndigits=round_digit
     )
@@ -441,7 +439,7 @@ def get_dir_size(path: str) -> int:
     can be turned into a human-readable string using the function above."""
 
     if isdir(path):
-        size_counter = 0
+        size_counter : int = 0
 
         for root, dirs, files in walk(path):
             for file in files:
@@ -465,12 +463,12 @@ def rsync(src: str, dest: str, args: str='-ar') -> subprocess.CompletedProcess[s
 def prune_log(file: str, length: int=10000) -> None:
     """Take excessively long logs and overwrite them with only the last 10,000 lines."""
 
-    length = abs(length)  # enforce positive int
+    length : int = abs(length)  # enforce positive int
     if isfile(file):
         with open(file, 'r') as fh:
-            text = fh.readlines()
+            text : list[str] = fh.readlines()
 
-        pruned_text = text[(length * -1):]  # convert to negative int
+        pruned_text : list[str] = text[(length * -1):]  # convert to negative int
 
         with open(file, 'w') as fh:
             fh.writelines(pruned_text)
@@ -509,27 +507,32 @@ class MyLogger(logging.Logger):
                  name : str = argv[0],
                  level : int = logging.INFO,
                  fmt : str = '%(asctime)s: %(message)s',
-                 to_file : str | bool = False,  # path to file (does not need to exist), or False to ignore file
+                 to_file : str | bool = False,   # path to file (does not need to exist), or False to ignore file
                  to_console : bool = True):      # True to output to console, or False to ignore console
 
         super().__init__(name, level)
-        self.name = name
-        self.level = level
-        self.to_file = to_file
-        self.to_console = to_console
+        self.name : str = name
+        self.level : int = level
+        self.to_file : str | bool = to_file
+        self.to_console : bool = to_console
 
-        self.logger = logging.getLogger(name)
-        self.fmt = logging.Formatter(fmt)
+        self.logger : logging.Logger = logging.getLogger(name)
+        self.fmt : logging.Formatter = logging.Formatter(fmt)
 
         # Logger levels
-        self.NOTSET, self.DEBUG, self.INFO, self.WARNING, self.ERROR, self.CRITICAL = (0, 10, 20, 30, 40, 50)
+        self.NOTSET : int = 0
+        self.DEBUG : int = 10
+        self.INFO : int = 20
+        self.WARNING : int = 30
+        self.ERROR : int = 40
+        self.CRITICAL : int = 50
 
         if to_console:
-            self.to_console = logging.StreamHandler(stdout)
-            self.logger.addHandler(self.to_console)
+            self.console_stream : logging.StreamHandler = logging.StreamHandler(stdout)
+            self.logger.addHandler(self.console_stream)
         if to_file:
-            self.to_file = logging.FileHandler(to_file)
-            self.logger.addHandler(self.to_file)
-            self.to_file.setFormatter(self.fmt)
+            self.file_stream : logging.FileHandler = logging.FileHandler(to_file)
+            self.logger.addHandler(self.file_stream)
+            self.file_stream.setFormatter(self.fmt)
 
         self.logger.setLevel(level)
