@@ -9,32 +9,32 @@ from logging import Logger
 
 
 # Zm-Move. user defined vars
-working_dir : str = '/nfs_share/matt_desktop/server_scripts/zm_helper/'
-semaphore : BoundedSemaphore = BoundedSemaphore(5)  # How many simultaneous copy jobs to allow at once
-disk_uuid : str = '244815e3-6ef8-450b-b12c-6bcd1df08fa1'  # UUID of backup disk. $ blkid -o value -s UUID /dev/sdxx
-log_file_name : str = '/var/log/zm_move.log'
-mount_point : str = '/mnt/7'
-zm_size_db : str = f'{working_dir}/zm_size.db'
-keep_days : int = 90     # How long to keep videos on system before moving to backup
-delete_days : int = 180  # How long to keep videos on backup before permanently deleting
-max_threads : int = 30   # Max number of jobs per day
-pid : int = getpid()
-zm_dir : str = '/var/cache/zoneminder/events'
-save_dir : str = f'{mount_point}/zm_cache'
-camera_caches : list[str] = [
+working_dir: str = '/nfs_share/matt_desktop/server_scripts/zm_helper/'
+semaphore: BoundedSemaphore = BoundedSemaphore(5)  # How many simultaneous copy jobs to allow at once
+disk_uuid: str = '244815e3-6ef8-450b-b12c-6bcd1df08fa1'  # UUID of backup disk. $ blkid -o value -s UUID /dev/sdxx
+log_file_name: str = '/var/log/zm_move.log'
+mount_point: str = '/mnt/7'
+zm_size_db: str = f'{working_dir}/zm_size.db'
+keep_days: int = 90     # How long to keep videos on system before moving to backup
+delete_days: int = 180  # How long to keep videos on backup before permanently deleting
+max_threads: int = 30   # Max number of jobs per day
+pid: int = getpid()
+zm_dir: str = '/var/cache/zoneminder/events'
+save_dir: str = f'{mount_point}/zm_cache'
+camera_caches: list[str] = [
     directory for directory in listdir(zm_dir)
     if islink(f'{zm_dir}/{directory}')
 ]
 
 # Main features. Set to False for testing purposes
-allow_delete : bool = True    # Turn on/off delete feature
-allow_move : bool = True      # Turn on/off move-to-backup feature
-allow_unmount : bool = False  # Allow the backup disk to be unmounted at the end of the program
+allow_delete: bool = True    # Turn on/off delete feature
+allow_move: bool = True      # Turn on/off move-to-backup feature
+allow_unmount: bool = False  # Allow the backup disk to be unmounted at the end of the program
 
 # Zm_Size_db
-date_fmt : str = '%Y-%m-%d'
-db_file : str = f'{working_dir}/zm_size.db'
-today_date : str = dt.strftime(dt.now(), '%Y-%m-%d')  # YYYY-MM-DD
+date_fmt: str = '%Y-%m-%d'
+db_file: str = f'{working_dir}/zm_size.db'
+today_date: str = dt.strftime(dt.now(), '%Y-%m-%d')  # YYYY-MM-DD
 
 
 logger: Logger = MyLogger(
@@ -47,18 +47,18 @@ logger: Logger = MyLogger(
 
 class ZmHelper:
     def __init__(self):
-        self.archive_counter : int = 0
-        self.move_counter : int = 0
-        self.delete_counter : int = 0
-        self.archive_threads : list[Thread] = []
-        self.move_threads : list[Thread] = []
-        self.delete_threads : list[Thread] = []
+        self.archive_counter: int = 0
+        self.move_counter: int = 0
+        self.delete_counter: int = 0
+        self.archive_threads: list[Thread] = []
+        self.move_threads: list[Thread] = []
+        self.delete_threads: list[Thread] = []
 
     def move_worker(self, move_source: str, move_destination: str, move_size: int, move_cache_name: str) -> None:
         """Copies the source to the destination, then deletes the source."""
         with semaphore:
-            start : dt = dt.now()
-            human_readable_size : str = byte_sizer(move_size)
+            start: dt = dt.now()
+            human_readable_size: str = byte_sizer(move_size)
 
             if isdir(move_destination):
                 logger.warning(f'{move_source} already exists in {move_destination}. '
@@ -87,13 +87,13 @@ class ZmHelper:
                        archive_cache_name: str, archive_date: str, compression_type: str = 'bztar') -> None:
         """Archives (with compression) the source to the destination, then deletes the source."""
         with semaphore:
-            start : dt = dt.now()
+            start: dt = dt.now()
 
             if not isdir(archive_destination):
                 logger.debug(f'{archive_destination} does not exist. Creating now.')
                 makedirs(archive_destination)
 
-            human_readable_size : str = byte_sizer(archive_size)
+            human_readable_size: str = byte_sizer(archive_size)
             logger.info(f'Beginning backup now {archive_destination} -- {human_readable_size}')
 
             if not isdir(archive_destination):

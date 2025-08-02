@@ -44,7 +44,12 @@ else:
 
 
 logger.debug('Creating DiskMount instance')
-backup_vol: DiskMount = DiskMount(uuid=disk_uuid)
+
+try:
+    backup_vol: DiskMount = DiskMount(uuid=disk_uuid)
+except subprocess.CalledProcessError as e:
+    logger.critical(e)
+    logger.critical(f'Backup disk failed to mount. Perhaps it is disconnected.')
 
 try:
     backup_vol.find_mountpoint()  # finding mount point checks to see if disk is already mounted!
