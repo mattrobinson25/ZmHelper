@@ -14,6 +14,12 @@ from zm_lib import (
 )
 
 
+def lock_handler(state: bool) -> None:
+    with open(lock_file, 'wb') as file:
+        logger.debug('Unlocking lock file')
+        pickle.dump({'state': state}, file)
+
+
 zm_helper: ZmHelper = ZmHelper()
 
 # Check to see if program is locked
@@ -35,14 +41,10 @@ if is_locked:
     exit()
 else:
     # Program is not locked. Lock now
-    with open(lock_file, 'wb') as file:
-        logger.warning(' Beginning Backup '.center(80, '#'))
-        # Other instances of this program will now be prevented from running
-        logger.debug('Locking program now.')
-        lock_state_obj: dict[str, bool] = {'state': True}
-        pickle.dump(lock_state_obj, file)
-
-
+    logger.warning(' Beginning Backup '.center(80, '#'))
+    logger.debug('Locking program now.')
+    lock_handler(True)
+ 
 logger.debug('Creating DiskMount instance')
 
 try:
@@ -50,6 +52,7 @@ try:
 except subprocess.CalledProcessError as e:
     logger.critical(e)
     logger.critical(f'Backup disk failed to mount. Perhaps it is disconnected.')
+    lock_handler(False)
 
 try:
     backup_vol.find_mountpoint()  # finding mount point checks to see if disk is already mounted!
@@ -102,9 +105,7 @@ if allow_delete:
 with sqlite3.connect(zm_size_db) as conn:
     df = pd.read_sql('select * from zm_sizes', conn)
 
-# zm_helper.threads: list[Thread] = []
 delete_size: int = 0
-# limit_reached = False
 
 for cache in listdir(save_dir):
     cache_dir = f'{save_dir}/{cache}'
@@ -250,9 +251,7 @@ else:
     logger.warning('Unmount not allowed. Skipping unmount.')
 
 # Program is now finished. Unlock to allow new instances.
-with open(lock_file, 'wb') as file:
-    logger.debug('Unlocking lock file')
-    pickle.dump({'state': False}, file)
+lock_handler(False)
 
 logger.warning(f'''
         Status: {status.upper()}
