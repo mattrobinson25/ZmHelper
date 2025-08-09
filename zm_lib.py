@@ -40,7 +40,7 @@ today_date: str = dt.strftime(dt.now(), '%Y-%m-%d')  # YYYY-MM-DD
 logger: Logger = MyLogger(
     name='zm_mover',
     to_file='/var/log/zm_move.log',
-    to_console=False,
+    to_console=True,
     level=20
 ).logger
 

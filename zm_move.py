@@ -33,14 +33,13 @@ except FileNotFoundError:
 
 is_locked: bool = lock_state_obj['state']
 
-
-# Exit program if already locked.
 if is_locked:
+    # Exit program if already locked.
     # Two instances of this program may not run at the same time.
     logger.error(f'Program is already running. Wait for finish or delete lock file {lock_file}\n')
     exit()
 else:
-    # Program is not locked. Lock now
+    # Program is not locked. Lock now.
     logger.warning(' Beginning Backup '.center(80, '#'))
     logger.debug('Locking program now.')
     lock_handler(True)
@@ -53,6 +52,7 @@ except subprocess.CalledProcessError as e:
     logger.critical(e)
     logger.critical(f'Backup disk failed to mount. Perhaps it is disconnected.')
     lock_handler(False)
+    exit()
 
 try:
     backup_vol.find_mountpoint()  # finding mount point checks to see if disk is already mounted!
@@ -76,16 +76,9 @@ if not backup_vol.is_mounted:
     backup_vol.mount(mount_point=mount_point)
 
 
-logger.warning(backup_vol)  # calls __repr__() and shows some useful information
-
-try:
-    disk_usage: int = backup_vol.disk_usage()
-except DiskMount.DiskMountError as e:
-    logger.error(e)
-    exit()
-
 if backup_vol.is_mounted:
-    logger.warning(f'Backup disk is at {disk_usage}%')
+    logger.warning(backup_vol)  # calls __repr__() and shows some useful information
+    logger.warning(f'Backup disk is at {backup_vol.disk_usage()}%')
 else:
     logger.error('Backup disk was not mounted properly. Exiting now.')
     exit()
@@ -217,14 +210,11 @@ if allow_move:
             status: str = 'Failure'
             logger.critical(e)
     else:
-        logger.error('The backup volume does not have enough space for the current set of jobs! Skipping!')
+        logger.error('The backup disk does not have enough space for the current set of jobs! Skipping!')
         status: str = 'Failure'
 else:
     logger.warning('Move to backup is not allowed. Skipping!')
     status: str = 'Success'
-
-disk_usage: int = backup_vol.disk_usage()
-disk_available: str = byte_sizer(backup_vol.disk_available())
 
 if allow_unmount:
     try:
@@ -250,8 +240,9 @@ if allow_unmount:
 else:
     logger.warning('Unmount not allowed. Skipping unmount.')
 
-# Program is now finished. Unlock to allow new instances.
+# Program is now finished. Unlock to allow new instances in the future.
 lock_handler(False)
+disk_usage: int = backup_vol.disk_usage()
 
 logger.warning(f'''
         Status: {status.upper()}
@@ -259,7 +250,7 @@ logger.warning(f'''
     Backup Job: {backup_size_human_readable}
     Delete Job: {delete_size_human_readable}
     
-    {disk_available} remaining on backup disk.
+    {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage}%.
 ''')
 
@@ -285,7 +276,6 @@ if disk_usage >= 90:
         with open('/etc/motd', 'w') as file:
             new_lines: list[str] = [line for _, line in text_list]
             file.writelines(new_lines)
-
 
 logger.warning('Done!\n\n')
 prune_log(log_file_name, length=5000)
