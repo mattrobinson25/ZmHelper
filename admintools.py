@@ -395,7 +395,7 @@ class DiskMount:
             )
 
 
-def byte_sizer(file_size: int, round_digit: int=2) -> str:
+def byte_sizer(file_size: int | float, round_digit: int=2) -> str:
     """Get a human-readable string based on very large integers representing the size of a file or directory. Numbers
     like 1024 will be represented as 1 Mb"""
 

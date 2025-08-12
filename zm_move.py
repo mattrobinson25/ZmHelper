@@ -102,6 +102,7 @@ delete_size: int = 0
 
 for cache in listdir(save_dir):
     cache_dir = f'{save_dir}/{cache}'
+
     for date_dir in listdir(cache_dir):
         try:
             date_dir_parsed: dt = dt.strptime(date_dir, '%Y-%m-%d')
@@ -116,12 +117,15 @@ for cache in listdir(save_dir):
                 size: int = df[df.date == date_dir][cache].item()
                 delete_size += size
 
-                thread: Thread = Thread(target=zm_helper.delete_worker, args=(target, size))
+                thread: Thread = Thread(
+                    target=zm_helper.delete_worker,
+                    args=(target, size)
+                )
                 zm_helper.delete_threads.append(thread)
 
 
-disk_availability: int = backup_vol.disk_available()
-disk_availability_human_readable: str = byte_sizer(disk_availability)
+disk_availability_start: int = backup_vol.disk_available()
+disk_availability_human_readable: str = byte_sizer(disk_availability_start)
 delete_size_human_readable: str = byte_sizer(delete_size)
 
 logger.info(f'''        
@@ -184,9 +188,9 @@ for cache in camera_caches:
                     limit_reached: bool = True
 
 
-disk_availability: int = backup_vol.disk_available()
+disk_availability_end: int = backup_vol.disk_available()
 backup_size_human_readable: str = byte_sizer(backup_size)
-disk_availability_human_readable: str = byte_sizer(disk_availability)
+disk_availability_human_readable: str = byte_sizer(disk_availability_end)
 
 logger.info(f'''
                  Move Job
@@ -200,7 +204,7 @@ logger.info(f'''
 
 if allow_move:
     # check to see if the backup disk has enough space to handle the backup jobs
-    if disk_availability > backup_size:
+    if disk_availability_end > backup_size:
         status: str = 'Success'
         # Begin threads
         try:
@@ -243,12 +247,15 @@ else:
 # Program is now finished. Unlock to allow new instances in the future.
 lock_handler(False)
 disk_usage: int = backup_vol.disk_usage()
+disk_availability_delta: str = byte_sizer(disk_availability_end - disk_availability_start)
+disk_availability_pcent_delta: str = byte_sizer((disk_availability_start / disk_availability_end) * 100)
 
 logger.warning(f'''
         Status: {status.upper()}
       Run time: {dt.now() - start}  
     Backup Job: {backup_size_human_readable}
     Delete Job: {delete_size_human_readable}
+Change on Disk: {disk_availability_delta} -- {disk_availability_pcent_delta}%
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage}%.
