@@ -94,7 +94,7 @@ class ZmHelper:
                 makedirs(archive_destination)
 
             human_readable_size: str = byte_sizer(archive_size)
-            logger.info(f'Beginning backup now {archive_destination} -- {human_readable_size}')
+            logger.info(f'Beginning backup now {archive_destination} ({human_readable_size})')
 
             if not isdir(archive_destination):
                 logger.info(f'Creating {archive_destination}')
@@ -126,6 +126,4 @@ class ZmHelper:
         with semaphore:
             human_readable_size = byte_sizer(del_size)
             rmtree(del_path)
-            logger.info(f'''
-                Finished deleting {del_path} - {human_readable_size}
-                ''')
+            logger.info(f'Finished deleting {del_path} ({human_readable_size})')
