@@ -124,6 +124,7 @@ if allow_delete:
 
 
 disk_availability_start: int = backup_vol.disk_available()
+disk_usage_start: int = backup_vol.disk_usage()
 disk_used_start: int = backup_vol.disk_used()
 disk_availability_human_readable: str = byte_sizer(disk_availability_start)
 delete_size_human_readable: str = byte_sizer(delete_size)
@@ -190,7 +191,6 @@ if allow_move:
 
 
 disk_availability_end: int = backup_vol.disk_available()
-disk_used_end: int = backup_vol.disk_used()
 backup_size_human_readable: str = byte_sizer(backup_size)
 disk_availability_human_readable: str = byte_sizer(disk_availability_end)
 
@@ -247,14 +247,15 @@ else:
 
 
 lock_handler(False)  # Program finished. Unlock to allow new instances in the future.
-disk_usage: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
+disk_used_end: int = backup_vol.disk_used()
+disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
 disk_size: int = backup_vol.disk_size()  # total size of disk as bytes
-disk_change: int = disk_used_start - disk_used_end  # how much data was added to disk once finished
+disk_change: int = disk_used_end - disk_used_start # how much data was added to disk once finished
 disk_pcent_change: float = (disk_change / disk_size) * 100  # same as above - but as a percentage
 
 logger.debug(f'disk_used_start : {disk_used_start}')
 logger.debug(f'disk_used_end : {disk_used_end}')
-logger.debug(f'f{disk_used_start} - {disk_used_end} = {disk_used_start - disk_used_end}')
+logger.debug(f'f{disk_used_end} - {disk_used_start} = {disk_used_end - disk_used_start}')
 
 sign: str = ''
 if disk_change > 0:
@@ -265,14 +266,14 @@ logger.warning(f'''
           Run time: {dt.now() - start}  
         Backup Job: {backup_size_human_readable}
         Delete Job: {delete_size_human_readable}
-    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{round(disk_pcent_change)}%)
+    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{disk_usage_end - disk_usage_start}%)
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
-    Backup disk usage is at {disk_usage}%.
+    Backup disk usage is at {disk_usage_end}%.
 ''')
 
-if disk_usage >= 90:
-    message: str = f'Warning! ZM backup cache is at {disk_usage}%'
+if disk_usage_end >= 90:
+    message: str = f'Warning! ZM backup cache is at {disk_usage_end}%'
     date_and_time: str = dt.now().strftime('%c')
     full_message: str = f"{date_and_time} -- {message}\n"
 
