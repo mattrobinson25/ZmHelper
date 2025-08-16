@@ -399,6 +399,13 @@ def byte_sizer(file_size: int | float, round_digit: int=2) -> str:
     """Get a human-readable string based on very large integers representing the size of a file or directory. Numbers
     like 1024 will be represented as 1 Mb"""
 
+    sign = ''
+    if file_size < 0:
+        # This func needs positive numbers to work. Negative nums will be converted to positive and the 'sign'
+        # will be put in front of the return statement str if it happens to be negative.
+        sign = '-'
+        file_size = abs(file_size)
+
     kilobyte : int = 10**3
     megabyte : int = 10**6
     gigabyte : int = 10**9
@@ -431,7 +438,8 @@ def byte_sizer(file_size: int | float, round_digit: int=2) -> str:
         number=(file_size / 1024 ** exponent),
         ndigits=round_digit
     )
-    return f'{byte_size} {byte_type}'  # human-readable size like "3.4 Gb"
+
+    return f'{sign}{byte_size} {byte_type}'  # human-readable size like "3.4 Gb"
 
 
 def get_dir_size(path: str) -> int:
