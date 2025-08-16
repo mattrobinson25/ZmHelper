@@ -100,20 +100,19 @@ with sqlite3.connect(zm_size_db) as conn:
 
 delete_size: int = 0
 
-for cache in listdir(save_dir):
-    cache_dir = f'{save_dir}/{cache}'
+if allow_delete:
+    for cache in listdir(save_dir):
+        cache_dir = f'{save_dir}/{cache}'
 
-    for date_dir in listdir(cache_dir):
-        try:
-            date_dir_parsed: dt = dt.strptime(date_dir, '%Y-%m-%d')
-        except ValueError:
-            logger.error(f'Invalid date dir -- {date_dir} in {cache_dir}')
-            continue
+        for date_dir in listdir(cache_dir):
+            try:
+                date_dir_parsed: dt = dt.strptime(date_dir, '%Y-%m-%d')
+            except ValueError:
+                logger.error(f'Invalid date dir -- {date_dir} in {cache_dir}')
+                continue
 
-        if date_dir_parsed < time_threshold:
-            target: str = f'{cache_dir}/{date_dir}'
-
-            if allow_delete:
+            if date_dir_parsed < time_threshold:
+                target: str = f'{cache_dir}/{date_dir}'
                 size: int = df[df.date == date_dir][cache].item()
                 delete_size += size
 
@@ -125,18 +124,19 @@ for cache in listdir(save_dir):
 
 
 disk_availability_start: int = backup_vol.disk_available()
+disk_used_start: int = backup_vol.disk_used()
 disk_availability_human_readable: str = byte_sizer(disk_availability_start)
 delete_size_human_readable: str = byte_sizer(delete_size)
 
-logger.info(f'''        
-               Delete Job
-    Available space: {disk_availability_human_readable}
-         Disk Usage: {backup_vol.disk_usage()}%
-        Delete Size: {delete_size_human_readable}
-        Num threads: {len(zm_helper.delete_threads)}
-    ''')
-
 if allow_delete:
+    logger.info(f'''        
+                   Delete Job
+        Available space: {disk_availability_human_readable}
+             Disk Usage: {backup_vol.disk_usage()}%
+            Delete Size: {delete_size_human_readable}
+            Num threads: {len(zm_helper.delete_threads)}
+        ''')
+
     [task.start() for task in zm_helper.delete_threads]
     [task.join() for task in zm_helper.delete_threads]
 else:
@@ -153,56 +153,57 @@ backup_size: int = 0
 logger.info(f'Searching for directories {zm_dir} older than {time_threshold_formatted} to archive')
 
 
-# Each camera has its own data cache
-for cache in camera_caches:
-    # Each cache has directories named by the date they were created
-    dates_cache: list[str] = listdir(f'{zm_dir}/{cache}')
+if allow_move:
+    # Each camera has its own data cache
+    for cache in camera_caches:
+        # Each cache has directories named by the date they were created
+        dates_cache: list[str] = listdir(f'{zm_dir}/{cache}')
 
-    for date_dir in dates_cache:
-        if limit_reached:
-            continue
-        else:
-            try:
-                cache_date_parsed: dt = dt.strptime(date_dir, date_fmt)  # Convert dir name into datetime object
-            except ValueError:
-                logger.warning(f'Invalid date folder found {zm_dir}/{cache}/{date_dir}. This should be deleted!')
+        for date_dir in dates_cache:
+            if limit_reached:
                 continue
+            else:
+                try:
+                    cache_date_parsed: dt = dt.strptime(date_dir, date_fmt)  # Convert dir name into datetime object
+                except ValueError:
+                    logger.warning(f'Invalid date folder found {zm_dir}/{cache}/{date_dir}. This should be deleted!')
+                    continue
 
-            if cache_date_parsed < time_threshold:
-                source: str = f'{zm_dir}/{cache}/{date_dir}'
-                destination: str = f'{save_dir}/{cache}/{date_dir}'
+                if cache_date_parsed < time_threshold:
+                    source: str = f'{zm_dir}/{cache}/{date_dir}'
+                    destination: str = f'{save_dir}/{cache}/{date_dir}'
 
-                if len(zm_helper.archive_threads) < max_threads:  # Put a limit on how many jobs can be done per day
-                    logger.debug(f'Found copy path {source}')
-                    size: int = df[df.date == date_dir][cache].item()
-                    backup_size += size
-                    
-                    # archive_worker and move_worker will have the same args
-                    thread: Thread = Thread(
-                        target=zm_helper.archive_worker,
-                        args=(source, destination, size, cache, date_dir, 'bztar')
-                    )
-                    zm_helper.archive_threads.append(thread)
-                else:
-                    logger.warning(f'Maximum of {max_threads} move jobs reached for the day.')
-                    limit_reached: bool = True
+                    if len(zm_helper.archive_threads) < max_threads:  # Put a limit on how many jobs can be done per day
+                        logger.debug(f'Found copy path {source}')
+                        size: int = df[df.date == date_dir][cache].item()
+                        backup_size += size
+
+                        # archive_worker and move_worker will have the same args
+                        thread: Thread = Thread(
+                            target=zm_helper.archive_worker,
+                            args=(source, destination, size, cache, date_dir, 'bztar')
+                        )
+                        zm_helper.archive_threads.append(thread)
+                    else:
+                        logger.warning(f'Maximum of {max_threads} move jobs reached for the day.')
+                        limit_reached: bool = True
 
 
 disk_availability_end: int = backup_vol.disk_available()
+disk_used_end: int = backup_vol.disk_used()
 backup_size_human_readable: str = byte_sizer(backup_size)
 disk_availability_human_readable: str = byte_sizer(disk_availability_end)
 
-logger.info(f'''
-                 Move Job
-        Backup size: {backup_size_human_readable}
-    Available space: {disk_availability_human_readable}
-         Disk Usage: {backup_vol.disk_usage()}%
-        Num threads: {len(zm_helper.archive_threads)}
-        Max threads: {max_threads}
-    ''')
-
-
 if allow_move:
+    logger.info(f'''
+                     Move Job
+            Backup size: {backup_size_human_readable}
+        Available space: {disk_availability_human_readable}
+             Disk Usage: {backup_vol.disk_usage()}%
+            Num threads: {len(zm_helper.archive_threads)}
+            Max threads: {max_threads}
+        ''')
+
     # check to see if the backup disk has enough space to handle the backup jobs
     if disk_availability_end > backup_size:
         status: str = 'Success'
@@ -244,18 +245,27 @@ if allow_unmount:
 else:
     logger.warning('Unmount not allowed. Skipping unmount.')
 
-# Program is now finished. Unlock to allow new instances in the future.
-lock_handler(False)
-disk_usage: int = backup_vol.disk_usage()
-disk_availability_delta: str = byte_sizer(disk_availability_end - disk_availability_start)
-disk_availability_pcent_delta: str = byte_sizer((disk_availability_start / disk_availability_end) * 100)
+
+lock_handler(False)  # Program finished. Unlock to allow new instances in the future.
+disk_usage: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
+disk_size: int = backup_vol.disk_size()  # total size of disk as bytes
+disk_change: int = disk_used_start - disk_used_end  # how much data was added to disk once finished
+disk_pcent_change: float = (disk_change / disk_size) * 100  # same as above - but as a percentage
+
+logger.debug(f'disk_used_start : {disk_used_start}')
+logger.debug(f'disk_used_end : {disk_used_end}')
+logger.debug(f'f{disk_used_start} - {disk_used_end} = {disk_used_start - disk_used_end}')
+
+sign: str = ''
+if disk_change > 0:
+    sign: str = '+'
 
 logger.warning(f'''
-        Status: {status.upper()}
-      Run time: {dt.now() - start}  
-    Backup Job: {backup_size_human_readable}
-    Delete Job: {delete_size_human_readable}
-Change on Disk: {disk_availability_delta} -- {disk_availability_pcent_delta}%
+            Status: {status.upper()}
+          Run time: {dt.now() - start}  
+        Backup Job: {backup_size_human_readable}
+        Delete Job: {delete_size_human_readable}
+    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{round(disk_pcent_change)}%)
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage}%.
