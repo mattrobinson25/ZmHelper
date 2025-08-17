@@ -252,20 +252,39 @@ logger.debug(f'disk_used_start : {disk_used_start}')
 logger.debug(f'disk_used_end : {disk_used_end}')
 logger.debug(f'{disk_used_end} - {disk_used_start} = {disk_used_end - disk_used_start}')
 
-sign: str = ''
+# disk_change will be interpolated into a str. A plus or minus sign will be put in front of it as a str
 if disk_change > 0:
-    sign: str = '+'
-    
-if -1 > disk_usage_pcent < 1:
+    sign1: str = '+'
+elif disk_change == 0:
+    sign1: str = ''
+else:
+    sign1 = '-'
+
+disk_change = abs(disk_change)
+
+# very often disk_usage_pcent will have a value of 0% when very small changes have been made. This will be re-defined as <1%
+if disk_usage_pcent < -1:
+    sign2: str = ''
+elif disk_usage_pcent > 1:
+    sign2: str = '+'
+else:  # between -1 and 1
     disk_usage_pcent: int = 1
-    sign: str = f'< {sign}'
+    sign2: str = f'< {sign1}'
+
+disk_usage_pcent = abs(disk_usage_pcent)
+
+# Finally, if nothing has been changed then the above changes can be removed
+if disk_change == 0:
+    sign2: str = ''
+    disk_usage_pcent = 0
+
 
 logger.warning(f'''
             Status: {status.upper()}
           Run time: {dt.now() - start}  
         Backup Job: {backup_size_human_readable}
         Delete Job: {delete_size_human_readable}
-    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{disk_usage_pcent}%)
+    Change on Disk: {sign1}{byte_sizer(disk_change)} ({sign2}{disk_usage_pcent}%)
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage_end}%.
