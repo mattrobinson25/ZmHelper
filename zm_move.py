@@ -123,8 +123,7 @@ if allow_delete:
                 zm_helper.delete_threads.append(thread)
 
 
-disk_availability_start: int = backup_vol.disk_available()  # How much space is left on the disk partition
-disk_availability_human_readable: str = byte_sizer(disk_availability_start)  # Same as above - but human-readable
+disk_availability_human_readable: str = byte_sizer(backup_vol.disk_available())  # Space available on partition
 disk_used_start: int = backup_vol.disk_used()  # How much space is currently being used on partition
 disk_usage_start: int = backup_vol.disk_usage()  # Same as above - but as a percentage
 delete_size_human_readable: str = byte_sizer(delete_size)
@@ -208,12 +207,8 @@ if allow_move:
     if disk_availability_end > backup_size:
         status: str = 'Success'
         # Begin threads
-        try:
-            [task.start() for task in zm_helper.archive_threads]
-            [task.join() for task in zm_helper.archive_threads]  # Program waits here for all threads to complete
-        except Exception as e:
-            status: str = 'Failure'
-            logger.critical(e)
+        [task.start() for task in zm_helper.archive_threads]
+        [task.join() for task in zm_helper.archive_threads]  # Program waits here for all threads to complete
     else:
         logger.error('The backup disk does not have enough space for the current set of jobs! Skipping!')
         status: str = 'Failure'
@@ -251,22 +246,26 @@ disk_used_end: int = backup_vol.disk_used()  # hom much disk space is being used
 disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
 disk_size: int = backup_vol.disk_size()  # total size of disk partition
 disk_change: int = disk_used_end - disk_used_start  # how much data was added to disk once finished
-disk_pcent_change: float = (disk_change / disk_size) * 100  # same as above - but as a percentage
+disk_usage_pcent: int = disk_usage_end - disk_usage_start
 
 logger.debug(f'disk_used_start : {disk_used_start}')
 logger.debug(f'disk_used_end : {disk_used_end}')
-logger.debug(f'f{disk_used_end} - {disk_used_start} = {disk_used_end - disk_used_start}')
+logger.debug(f'{disk_used_end} - {disk_used_start} = {disk_used_end - disk_used_start}')
 
 sign: str = ''
 if disk_change > 0:
     sign: str = '+'
+    
+if -1 > disk_usage_pcent < 1:
+    disk_usage_pcent: int = 1
+    sign: str = f'< {sign}'
 
 logger.warning(f'''
             Status: {status.upper()}
           Run time: {dt.now() - start}  
         Backup Job: {backup_size_human_readable}
         Delete Job: {delete_size_human_readable}
-    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{disk_usage_end - disk_usage_start}%)
+    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{disk_usage_pcent}%)
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage_end}%.
