@@ -246,7 +246,7 @@ disk_used_end: int = backup_vol.disk_used()  # hom much disk space is being used
 disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
 disk_size: int = backup_vol.disk_size()  # total size of disk partition
 disk_change: int = disk_used_end - disk_used_start  # how much data was added to disk once finished
-disk_usage_pcent: int = disk_usage_end - disk_usage_start
+disk_usage_pcent: int = disk_usage_end - disk_usage_start  # disk change as a percentage
 
 logger.debug(f'disk_used_start : {disk_used_start}')
 logger.debug(f'disk_used_end : {disk_used_end}')
@@ -258,9 +258,9 @@ if disk_change > 0:
 elif disk_change == 0:
     sign1: str = ''
 else:
-    sign1 = '-'
+    sign1: str = '-'
 
-disk_change = abs(disk_change)
+disk_change: int = abs(disk_change)
 
 # very often disk_usage_pcent will have a value of 0% when very small changes have been made. This will be re-defined as <1%
 if disk_usage_pcent < -1:
@@ -269,14 +269,14 @@ elif disk_usage_pcent > 1:
     sign2: str = '+'
 else:  # between -1 and 1
     disk_usage_pcent: int = 1
-    sign2: str = f'< {sign1}'
+    sign2: str = f'{sign1} <'
 
-disk_usage_pcent = abs(disk_usage_pcent)
+disk_usage_pcent: int = abs(disk_usage_pcent)
 
-# Finally, if nothing has been changed then the above changes can be removed
+# Finally, if nothing has been changed then the above changes can be un-done and replaced by a zero
 if disk_change == 0:
     sign2: str = ''
-    disk_usage_pcent = 0
+    disk_usage_pcent: int = 0
 
 
 logger.warning(f'''
