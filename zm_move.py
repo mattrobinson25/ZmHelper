@@ -123,17 +123,17 @@ if allow_delete:
                 zm_helper.delete_threads.append(thread)
 
 
-disk_availability_start: int = backup_vol.disk_available()
-disk_usage_start: int = backup_vol.disk_usage()
-disk_used_start: int = backup_vol.disk_used()
-disk_availability_human_readable: str = byte_sizer(disk_availability_start)
+disk_availability_start: int = backup_vol.disk_available()  # How much space is left on the disk partition
+disk_availability_human_readable: str = byte_sizer(disk_availability_start)  # Same as above - but human-readable
+disk_used_start: int = backup_vol.disk_used()  # How much space is currently being used on partition
+disk_usage_start: int = backup_vol.disk_usage()  # Same as above - but as a percentage
 delete_size_human_readable: str = byte_sizer(delete_size)
 
 if allow_delete:
     logger.info(f'''        
                    Delete Job
         Available space: {disk_availability_human_readable}
-             Disk Usage: {backup_vol.disk_usage()}%
+             Disk Usage: {disk_usage_start}%
             Delete Size: {delete_size_human_readable}
             Num threads: {len(zm_helper.delete_threads)}
         ''')
