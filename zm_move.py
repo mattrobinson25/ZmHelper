@@ -263,9 +263,9 @@ else:
 disk_change: int = abs(disk_change)
 
 # very often disk_usage_pcent will have a value of 0% when very small changes have been made. This will be re-defined as <1%
-if disk_usage_pcent < -1:
+if disk_usage_pcent <= -1:
     sign2: str = ''
-elif disk_usage_pcent > 1:
+elif disk_usage_pcent >= 1:
     sign2: str = '+'
 else:  # between -1 and 1
     disk_usage_pcent: int = 1
