@@ -247,10 +247,10 @@ else:
 
 
 lock_handler(False)  # Program finished. Unlock to allow new instances in the future.
-disk_used_end: int = backup_vol.disk_used()
+disk_used_end: int = backup_vol.disk_used()  # hom much disk space is being used currently
 disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
-disk_size: int = backup_vol.disk_size()  # total size of disk as bytes
-disk_change: int = disk_used_end - disk_used_start # how much data was added to disk once finished
+disk_size: int = backup_vol.disk_size()  # total size of disk partition
+disk_change: int = disk_used_end - disk_used_start  # how much data was added to disk once finished
 disk_pcent_change: float = (disk_change / disk_size) * 100  # same as above - but as a percentage
 
 logger.debug(f'disk_used_start : {disk_used_start}')
