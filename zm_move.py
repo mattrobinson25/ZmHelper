@@ -208,7 +208,7 @@ if allow_move:
         status: str = 'Success'
         # Begin threads
         [task.start() for task in zm_helper.archive_threads]
-        [task.join() for task in zm_helper.archive_threads]  # Program waits here for all threads to complete
+        [task.join()  for task in zm_helper.archive_threads]  # Program waits here for all threads to complete
     else:
         logger.error('The backup disk does not have enough space for the current set of jobs! Skipping!')
         status: str = 'Failure'
@@ -254,28 +254,18 @@ logger.debug(f'{disk_used_end} - {disk_used_start} = {disk_used_end - disk_used_
 
 # disk_change will be interpolated into a str. A plus or minus sign will be put in front of it as a str
 if disk_change > 0:
-    sign1: str = '+'
+    sign: str = '+'
 elif disk_change == 0:
-    sign1: str = ''
+    sign: str = ''
 else:
-    sign1: str = '-'
+    sign: str = '-'
 
 disk_change: int = abs(disk_change)
 
-# very often disk_usage_pcent will have a value of 0% when very small changes have been made. This will be re-defined as <1%
-if disk_usage_pcent <= -1:
-    sign2: str = ''
-elif disk_usage_pcent >= 1:
-    sign2: str = '+'
-else:  # between -1 and 1
-    disk_usage_pcent: int = 1
-    sign2: str = f'{sign1} <'
-
-disk_usage_pcent: int = abs(disk_usage_pcent)
-
-# Finally, if nothing has been changed then the above changes can be un-done and replaced by a zero
+# very often disk_usage_pcent will have a val of 0% when very small changes have been made. This will be re-defined as <1%
+if disk_usage_pcent == 0:
+    disk_usage_pcent: str = f'< {sign}1'
 if disk_change == 0:
-    sign2: str = ''
     disk_usage_pcent: int = 0
 
 
@@ -284,7 +274,7 @@ logger.warning(f'''
           Run time: {dt.now() - start}  
         Backup Job: {backup_size_human_readable}
         Delete Job: {delete_size_human_readable}
-    Change on Disk: {sign1}{byte_sizer(disk_change)} ({sign2}{disk_usage_pcent}%)
+    Change on Disk: {sign}{byte_sizer(disk_change)} ({sign}{disk_usage_pcent}%)
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage_end}%.

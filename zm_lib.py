@@ -41,7 +41,7 @@ logger: Logger = MyLogger(
     name='zm_mover',
     to_file='/var/log/zm_move.log',
     to_console=True,
-    level=10
+    level=20
 ).logger
 
 
