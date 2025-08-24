@@ -262,6 +262,10 @@ class DiskMount:
               UUID: {self.uuid}
            Mounted: {self.is_mounted}
         Mountpoint: {self.mount_point}
+        
+         Disk Size: {self.disk_size()}
+        Space Used: {self.disk_used()}
+       Space Avail: {self.disk_available()}
         '''
 
     def mount(self, mount_point:str , options:str | None=None):
@@ -288,15 +292,18 @@ class DiskMount:
             return proc_return
 
     def unmount(self):
-        proc_return: subprocess.CompletedProcess[str] = subprocess.run(
-            args=['sudo', 'umount', self.mount_point],
-            text=True,
-            capture_output=True,
-            check=True
-        )
-        self.mount_point: None | str = None
-        self.is_mounted: bool = False
-        return proc_return
+        if self.mount_point:
+            proc_return: subprocess.CompletedProcess[str] = subprocess.run(
+                args=['sudo', 'umount', self.mount_point],
+                text=True,
+                capture_output=True,
+                check=True
+            )
+            self.mount_point: None | str = None
+            self.is_mounted: bool = False
+            return proc_return
+        else:
+            raise DiskMount.DiskMountError(message='Disk is not mounted yet.')
 
     def disk_usage(self) -> int:
         """Percent used on disk partition"""

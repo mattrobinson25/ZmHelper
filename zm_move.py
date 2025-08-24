@@ -15,6 +15,7 @@ from zm_lib import (
 
 
 def lock_handler(state: bool) -> None:
+    """Lock the program so that it can only be run once at a time. True will lock the program, and False will unlock."""
     with open(lock_file, 'wb') as file:
         logger.debug('Unlocking lock file')
         pickle.dump({'state': state}, file)
@@ -99,7 +100,13 @@ with sqlite3.connect(zm_size_db) as conn:
     df = pd.read_sql('select * from zm_sizes', conn)
 
 delete_size: int = 0
+disk_availability_human_readable: str = byte_sizer(backup_vol.disk_available())  # Space available on partition
+disk_used_start: int = backup_vol.disk_used()  # How much space is currently being used on partition
+disk_usage_start: int = backup_vol.disk_usage()  # Same as above - but as a percentage
+delete_size_human_readable: str = byte_sizer(delete_size)
 
+
+# Begin scheduling threads
 if allow_delete:
     for cache in listdir(save_dir):
         cache_dir: str = f'{save_dir}/{cache}'
@@ -121,12 +128,6 @@ if allow_delete:
                     args=(target, size)
                 )
                 zm_helper.delete_threads.append(thread)
-
-
-disk_availability_human_readable: str = byte_sizer(backup_vol.disk_available())  # Space available on partition
-disk_used_start: int = backup_vol.disk_used()  # How much space is currently being used on partition
-disk_usage_start: int = backup_vol.disk_usage()  # Same as above - but as a percentage
-delete_size_human_readable: str = byte_sizer(delete_size)
 
 if allow_delete:
     logger.info(f'''        
