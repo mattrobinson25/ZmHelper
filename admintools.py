@@ -303,7 +303,7 @@ class DiskMount:
             self.is_mounted: bool = False
             return proc_return
         else:
-            raise DiskMount.DiskMountError(message='Disk is not mounted yet.')
+            raise self.DiskMountError(message='Disk is not mounted yet.')
 
     def disk_usage(self) -> int:
         """Percent used on disk partition"""
