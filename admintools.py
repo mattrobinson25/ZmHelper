@@ -413,33 +413,48 @@ def byte_sizer(file_size: int | float, round_digit: int=2) -> str:
         sign = '-'
         file_size = abs(file_size)
 
-    kilobyte: int = 10**3
-    megabyte: int = 10**6
-    gigabyte: int = 10**9
-    terabyte: int = 10**12
-    petabyte: int = 10**15
+    kilobyte:  int = 10**3
+    megabyte:  int = 10**6
+    gigabyte:  int = 10**9
+    terabyte:  int = 10**12
+    petabyte:  int = 10**15
+    exabyte:   int = 10**18
+    zettabyte: int = 10**21
 
     if isnan(file_size):
         file_size: int = 0
 
     if file_size < kilobyte:
+        # Byte
         exponent: int = 0
         byte_type: str = 'Bytes'
     elif kilobyte <= file_size < megabyte:
+        # Kilobyte
         exponent: int = 1
         byte_type: str = 'Kb'
     elif megabyte <= file_size < gigabyte:
+        # Megabyte
         exponent: int = 2
         byte_type: str = 'Mb'
     elif gigabyte <= file_size < terabyte:
+        # Gigabyte
         exponent: int = 3
         byte_type: str = 'Gb'
     elif terabyte <= file_size < petabyte:
+        # Terabyte
         exponent: int = 4
         byte_type: str = 'Tb'
-    else:
+    elif petabyte <= file_size < exabyte:
+        # Petabyte
         exponent: int = 5
-        byte_type: str = 'Pb'
+        byte_type: str = 'Eb'
+    elif exabyte <= file_size < zettabyte:
+        # Exabyte
+        exponent: int = 6
+        byte_type: str = 'Zb'
+    else:  # Yottabyte
+        exponent: int = 7
+        byte_type: str = 'Yb'
 
     byte_size: float = round(
         number=(file_size / 1024 ** exponent),
