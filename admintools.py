@@ -332,7 +332,7 @@ class DiskMount:
                 check=True
             ).stdout
 
-            df_total_size: int = int(df_total_size.split()[-1][:-1])
+            df_total_size: int = int(df_total_size.split()[-1])
             return df_total_size * 1024
 
         else:
