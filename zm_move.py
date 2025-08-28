@@ -14,7 +14,7 @@ from zm_lib import (
 )
 
 
-def lock_handler(state: bool) -> None:
+def program_lock(state: bool) -> None:
     """Lock the program so that it can only be run once at a time. True will lock the program, and False will unlock."""
     with open(lock_file, 'wb') as file:
         logger.debug('Unlocking lock file')
@@ -43,7 +43,7 @@ else:
     # Program is not locked. Lock now.
     logger.warning(' Beginning Backup '.center(80, '#'))
     logger.debug('Locking program now.')
-    lock_handler(True)
+    program_lock(True)
  
 logger.debug('Creating DiskMount instance')
 
@@ -52,7 +52,7 @@ try:
 except subprocess.CalledProcessError as e:
     logger.critical(e)
     logger.critical(f'Backup disk failed to mount. Perhaps it is disconnected.')
-    lock_handler(False)
+    program_lock(False)
     exit()
 
 try:
@@ -243,7 +243,7 @@ else:
     logger.warning('Unmount not allowed. Skipping unmount.')
 
 
-lock_handler(False)  # Program finished. Unlock to allow new instances in the future.
+program_lock(False)  # Program finished. Unlock to allow new instances in the future.
 disk_used_end: int = backup_vol.disk_used()  # hom much disk space is being used currently
 disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
 disk_size: int = backup_vol.disk_size()  # total size of disk partition
@@ -265,10 +265,10 @@ else:
 disk_change: int = abs(disk_change)
 
 # very often disk_usage_pcent will have a val of 0% when very small changes have been made. This will be re-defined as <1%
-if disk_usage_pcent == 0:
+if disk_usage_pcent == 0 and disk_change != 0:
     disk_usage_pcent: str = '< 1'
-if disk_change == 0:
-    disk_usage_pcent: int = 0
+else:
+    disk_usage_pcent: str = '0'
 
 
 logger.warning(f'''
@@ -285,7 +285,7 @@ logger.warning(f'''
 if disk_usage_end >= 90:
     message: str = f'Warning! ZM backup cache is at'
     date_and_time: str = dt.now().strftime('%Y-%m-%d %H:%M:%S,000')
-    full_message: str = f"{date_and_time} -- {message} {disk_usage_end}%"
+    full_message: str = f"{date_and_time}: {message} {disk_usage_end}%"
 
     with open('/etc/motd', 'r') as file:
         text: str = file.read()

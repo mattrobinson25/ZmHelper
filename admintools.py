@@ -17,7 +17,8 @@ class Servers:
     example_server = Servers(ip='192.168.1.115', user='mrobinson', port=22, nfs_path='/nfs_share/')
 
     First, check to see that the server is up
-    example_server.ping()"""
+    example_server.ping()
+    """
 
     def __enter__(self):
         return self
@@ -26,13 +27,7 @@ class Servers:
         if self.is_mounted:
             self.nfs_unmount()
 
-    def __init__(self,
-                 ip: str,
-                 user: str,
-                 port: int=22,
-                 nfs_path: str | None=None,
-                 check_connection: bool=True):
-
+    def __init__(self, ip: str, user: str, port: int=22, nfs_path: str | None=None, check_connection: bool=True):
         self.subprocess_exceptions = (subprocess.CalledProcessError, subprocess.SubprocessError)
         self.ip: str = ip              # IP Address of remote server
         self.port: int = port		  # ssh port (default 22)
@@ -263,9 +258,9 @@ class DiskMount:
            Mounted: {self.is_mounted}
         Mountpoint: {self.mount_point}
         
-         Disk Size: {self.disk_size()}
-        Space Used: {self.disk_used()}
-       Space Avail: {self.disk_available()}
+         Disk Size: {byte_sizer(self.disk_size())}
+        Space Used: {byte_sizer(self.disk_used())}
+       Space Avail: {byte_sizer(self.disk_available())}
         '''
 
     def mount(self, mount_point:str , options:str | None=None):
