@@ -101,9 +101,12 @@ with sqlite3.connect(zm_size_db) as conn:
 
 delete_size: int = 0
 
+dry_run: bool = False
 if not allow_move and not allow_delete:
+    # Set allow_delete and allow_move to False in order to do a dry-run.
     logger.warning('This is a dry-run! Both features (delete and move) are disabled in settings zm_lib.py .'
                    ' Changes will be recorded in the log, but no actual changes will be made.')
+    dry_run: bool = True
 
 # Begin scheduling threads
 for cache in listdir(save_dir):
@@ -278,6 +281,7 @@ logger.warning(f'''
         Backup Job: {backup_size_human_readable}
         Delete Job: {delete_size_human_readable}
     Change on Disk: {sign}{byte_sizer(disk_change)} ({disk_usage_pcent}%)
+           Dry-Run: {dry_run}
     
     {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
     Backup disk usage is at {disk_usage_end}%.
