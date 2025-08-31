@@ -101,28 +101,31 @@ with sqlite3.connect(zm_size_db) as conn:
 
 delete_size: int = 0
 
+if not allow_move and not allow_delete:
+    logger.warning('This is a dry-run! Both features (delete and move) are disabled in settings zm_lib.py .'
+                   ' Changes will be recorded in the log, but no actual changes will be made.')
+
 # Begin scheduling threads
-if allow_delete:
-    for cache in listdir(save_dir):
-        cache_dir: str = f'{save_dir}/{cache}'
+for cache in listdir(save_dir):
+    cache_dir: str = f'{save_dir}/{cache}'
 
-        for date_dir in listdir(cache_dir):
-            try:
-                date_dir_parsed: dt = dt.strptime(date_dir, '%Y-%m-%d')
-            except ValueError:
-                logger.error(f'Invalid date dir -- {date_dir} in {cache_dir}')
-                continue
+    for date_dir in listdir(cache_dir):
+        try:
+            date_dir_parsed: dt = dt.strptime(date_dir, '%Y-%m-%d')
+        except ValueError:
+            logger.error(f'Invalid date dir -- {date_dir} in {cache_dir}')
+            continue
 
-            if date_dir_parsed < time_threshold:
-                target: str = f'{cache_dir}/{date_dir}'
-                size: int = df[df.date == date_dir][cache].item()
-                delete_size += size
+        if date_dir_parsed < time_threshold:
+            target: str = f'{cache_dir}/{date_dir}'
+            size: int = df[df.date == date_dir][cache].item()
+            delete_size += size
 
-                thread: Thread = Thread(
-                    target=zm_helper.delete_worker,
-                    args=(target, size)
-                )
-                zm_helper.delete_threads.append(thread)
+            thread: Thread = Thread(
+                target=zm_helper.delete_worker,
+                args=(target, size)
+            )
+            zm_helper.delete_threads.append(thread)
 
 
 disk_availability_human_readable: str = byte_sizer(backup_vol.disk_available())  # Space available on partition
@@ -130,19 +133,19 @@ disk_used_start: int = backup_vol.disk_used()  # How much space is currently bei
 disk_usage_start: int = backup_vol.disk_usage()  # Same as above - but as a percentage
 delete_size_human_readable: str = byte_sizer(delete_size)
 
-if allow_delete:
-    logger.info(f'''        
-                   Delete Job
-        Available space: {disk_availability_human_readable}
-             Disk Usage: {disk_usage_start}%
-            Delete Size: {delete_size_human_readable}
-            Num threads: {len(zm_helper.delete_threads)}
-        ''')
+logger.info(f'''        
+               Delete Job
+    Available space: {disk_availability_human_readable}
+         Disk Usage: {disk_usage_start}%
+        Delete Size: {delete_size_human_readable}
+        Num threads: {len(zm_helper.delete_threads)}
+    ''')
 
-    [task.start() for task in zm_helper.delete_threads]
-    [task.join() for task in zm_helper.delete_threads]
+if allow_delete:
+    [thread.start() for thread in zm_helper.delete_threads]
+    [thread.join()  for thread in zm_helper.delete_threads]
 else:
-    logger.info('Deletion disabled')
+    logger.info('Deletion disabled. No changes made.')
 
 
 # Begin move jobs
@@ -154,68 +157,66 @@ backup_size: int = 0
 
 logger.info(f'Searching for directories {zm_dir} older than {time_threshold_formatted} to archive')
 
+# Each camera has its own data cache
+for cache in camera_caches:
+    # Each cache has directories named by the date they were created
+    dates_cache: list[str] = listdir(f'{zm_dir}/{cache}')
 
-if allow_move:
-    # Each camera has its own data cache
-    for cache in camera_caches:
-        # Each cache has directories named by the date they were created
-        dates_cache: list[str] = listdir(f'{zm_dir}/{cache}')
-
-        for date_dir in dates_cache:
-            if limit_reached:
+    for date_dir in dates_cache:
+        if limit_reached:
+            continue
+        else:
+            try:
+                cache_date_parsed: dt = dt.strptime(date_dir, date_fmt)  # Convert dir name into datetime object
+            except ValueError:
+                logger.warning(f'Invalid date folder found {zm_dir}/{cache}/{date_dir}. This should be deleted!')
                 continue
-            else:
-                try:
-                    cache_date_parsed: dt = dt.strptime(date_dir, date_fmt)  # Convert dir name into datetime object
-                except ValueError:
-                    logger.warning(f'Invalid date folder found {zm_dir}/{cache}/{date_dir}. This should be deleted!')
-                    continue
 
-                if cache_date_parsed < time_threshold:
-                    source: str = f'{zm_dir}/{cache}/{date_dir}'
-                    destination: str = f'{save_dir}/{cache}/{date_dir}'
+            if cache_date_parsed < time_threshold:
+                source: str = f'{zm_dir}/{cache}/{date_dir}'
+                destination: str = f'{save_dir}/{cache}/{date_dir}'
 
-                    if len(zm_helper.archive_threads) < max_threads:  # Put a limit on how many jobs can be done per day
-                        logger.debug(f'Found copy path {source}')
-                        size: int = df[df.date == date_dir][cache].item()
-                        backup_size += size
+                if len(zm_helper.archive_threads) < max_threads:  # Put a limit on how many jobs can be done per day
+                    logger.debug(f'Found copy path {source}')
+                    size: int = df[df.date == date_dir][cache].item()
+                    backup_size += size
 
-                        # archive_worker and move_worker will have the same args
-                        thread: Thread = Thread(
-                            target=zm_helper.archive_worker,
-                            args=(source, destination, size, cache, date_dir, 'bztar')
-                        )
-                        zm_helper.archive_threads.append(thread)
-                    else:
-                        logger.warning(f'Maximum of {max_threads} move jobs reached for the day.')
-                        limit_reached: bool = True
+                    # archive_worker and move_worker will have the same args
+                    thread: Thread = Thread(
+                        target=zm_helper.archive_worker,
+                        args=(source, destination, size, cache, date_dir, 'bztar')
+                    )
+                    zm_helper.archive_threads.append(thread)
+                else:
+                    logger.warning(f'Maximum of {max_threads} move jobs reached for the day.')
+                    limit_reached: bool = True
 
 
 disk_availability_end: int = backup_vol.disk_available()
 backup_size_human_readable: str = byte_sizer(backup_size)
 disk_availability_human_readable: str = byte_sizer(disk_availability_end)
 
-if allow_move:
-    logger.info(f'''
-                     Move Job
-            Backup size: {backup_size_human_readable}
-        Available space: {disk_availability_human_readable}
-             Disk Usage: {backup_vol.disk_usage()}%
-            Num threads: {len(zm_helper.archive_threads)}
-            Max threads: {max_threads}
-        ''')
+logger.info(f'''
+                 Move Job
+        Backup size: {backup_size_human_readable}
+    Available space: {disk_availability_human_readable}
+         Disk Usage: {backup_vol.disk_usage()}%
+        Num threads: {len(zm_helper.archive_threads)}
+        Max threads: {max_threads}
+    ''')
 
+if allow_move:
     # check to see if the backup disk has enough space to handle the backup jobs
     if disk_availability_end > backup_size:
         status: str = 'Success'
         # Begin threads
-        [task.start() for task in zm_helper.archive_threads]
-        [task.join()  for task in zm_helper.archive_threads]  # Program waits here for all threads to complete
+        [thread.start() for thread in zm_helper.archive_threads]
+        [thread.join()  for thread in zm_helper.archive_threads]  # Program waits here for all threads to complete
     else:
         logger.error('The backup disk does not have enough space for the current set of jobs! Skipping!')
         status: str = 'Failure'
 else:
-    logger.warning('Move to backup is not allowed. Skipping!')
+    logger.warning('Move to backup is not allowed. No changes made')
     status: str = 'Success'
 
 if allow_unmount:
@@ -285,7 +286,7 @@ logger.warning(f'''
 if disk_usage_end >= 90:
     message: str = f'Warning! ZM backup cache is at'
     date_and_time: str = dt.now().strftime('%Y-%m-%d %H:%M:%S,000')
-    full_message: str = f"{date_and_time}: {message} {disk_usage_end}%"
+    full_message: str = f"{date_and_time}: {message} {disk_usage_end}%\n"
 
     with open('/etc/motd', 'r') as file:
         text: str = file.read()
@@ -305,5 +306,5 @@ if disk_usage_end >= 90:
             new_lines: list[str] = [line for _, line in text_list]
             file.writelines(new_lines)
 
-logger.warning('Done!\n\n')
 prune_log(log_file_name, length=5000)
+logger.warning('Done!\n\n')
