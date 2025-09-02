@@ -529,7 +529,7 @@ class MyLogger(logging.Logger):
     initialize a simple logger in a python file that can be imported by other scripts using the same logging attributes"""
 
     def __init__(self,
-                 name: str = argv[0],
+                 name: str = 'customLogger',
                  level: int = logging.INFO,
                  fmt: str = '%(asctime)s: %(message)s',
                  to_file: str | bool = False,   # path to file (does not need to exist), or False to ignore file

@@ -1,4 +1,5 @@
-from os import getpid, listdir, makedirs
+#!/usr/bin/python3
+from os import listdir, makedirs
 from os.path import islink, isdir
 from datetime import datetime as dt
 from threading import BoundedSemaphore
@@ -16,9 +17,8 @@ log_file_name: str = '/var/log/zm_move.log'
 mount_point: str = '/mnt/7'
 zm_size_db: str = f'{working_dir}/zm_size.db'
 keep_days: int = 90     # How long to keep videos on system before moving to backup
-delete_days: int = 120  # How long to keep videos on backup before permanently deleting
+delete_days: int = 180  # How long to keep videos on backup before permanently deleting
 max_threads: int = 30   # Max number of jobs per day
-pid: int = getpid()
 zm_dir: str = '/var/cache/zoneminder/events'
 save_dir: str = f'{mount_point}/zm_cache'
 camera_caches: list[str] = [

@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from os import listdir, mkdir
 from os.path import isdir
 from datetime import datetime as dt, timedelta as td
@@ -35,8 +36,7 @@ except FileNotFoundError:
 is_locked: bool = lock_state_obj['state']
 
 if is_locked:
-    # Exit program if already locked.
-    # Two instances of this program may not run at the same time.
+    # Exit program if already locked. Two instances of this program may not run at the same time.
     logger.error(f'Program is already running. Wait for finish or delete lock file {lock_file}\n')
     exit()
 else:
@@ -104,8 +104,8 @@ delete_size: int = 0
 dry_run: bool = False
 if not allow_move and not allow_delete:
     # Set allow_delete and allow_move to False in order to do a dry-run.
-    logger.warning('This is a dry-run! Both features (delete and move) are disabled in settings zm_lib.py .'
-                   ' Changes will be recorded in the log, but no actual changes will be made.')
+    logger.warning('This is a dry-run! Both features (delete and move) are disabled in settings zm_lib.py.\n'
+                   'Changes will be recorded in the log, but no actual changes will be made.')
     dry_run: bool = True
 
 # Begin scheduling threads
@@ -167,7 +167,7 @@ for cache in camera_caches:
 
     for date_dir in dates_cache:
         if limit_reached:
-            continue
+            break
         else:
             try:
                 cache_date_parsed: dt = dt.strptime(date_dir, date_fmt)  # Convert dir name into datetime object
