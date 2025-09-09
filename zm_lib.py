@@ -11,13 +11,13 @@ from logging import Logger
 
 # Zm-Move. user defined vars
 working_dir: str = '/nfs_share/matt_desktop/server_scripts/zm_helper/'
-semaphore: BoundedSemaphore = BoundedSemaphore(5)  # How many simultaneous copy jobs to allow at once
+semaphore: BoundedSemaphore = BoundedSemaphore(5)  # How many simultaneous processes to allow at once
 disk_uuid: str = '244815e3-6ef8-450b-b12c-6bcd1df08fa1'  # UUID of backup disk. $ blkid -o value -s UUID /dev/sdxx
 log_file_name: str = '/var/log/zm_move.log'
 mount_point: str = '/mnt/7'
 zm_size_db: str = f'{working_dir}/zm_size.db'
 keep_days: int = 90     # How long to keep videos on system before moving to backup
-delete_days: int = 180  # How long to keep videos on backup before permanently deleting
+delete_days: int = 150  # How long to keep videos on backup before permanently deleting
 max_threads: int = 30   # Max number of jobs per day
 zm_dir: str = '/var/cache/zoneminder/events'
 save_dir: str = f'{mount_point}/zm_cache'

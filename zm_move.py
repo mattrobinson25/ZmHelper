@@ -222,6 +222,15 @@ else:
     logger.warning('Move to backup is not allowed. No changes made')
     status: str = 'Success'
 
+
+program_lock(False)  # Program finished. Unlock to allow new instances in the future.
+disk_used_end: int = backup_vol.disk_used()  # hom much disk space is being used currently
+disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
+disk_size: int = backup_vol.disk_size()  # total size of disk partition
+disk_change: int = disk_used_end - disk_used_start  # how much data was added to disk once finished
+disk_usage_pcent: int = disk_usage_end - disk_usage_start  # disk change as a percentage
+
+
 if allow_unmount:
     try:
         backup_vol.unmount()
@@ -247,13 +256,6 @@ else:
     logger.warning('Unmount not allowed. Skipping unmount.')
 
 
-program_lock(False)  # Program finished. Unlock to allow new instances in the future.
-disk_used_end: int = backup_vol.disk_used()  # hom much disk space is being used currently
-disk_usage_end: int = backup_vol.disk_usage()  # percentage of how much disk space is being used currently
-disk_size: int = backup_vol.disk_size()  # total size of disk partition
-disk_change: int = disk_used_end - disk_used_start  # how much data was added to disk once finished
-disk_usage_pcent: int = disk_usage_end - disk_usage_start  # disk change as a percentage
-
 logger.debug(f'disk_used_start : {disk_used_start}')
 logger.debug(f'disk_used_end : {disk_used_end}')
 logger.debug(f'{disk_used_end} - {disk_used_start} = {disk_used_end - disk_used_start}')
@@ -269,10 +271,11 @@ else:
 disk_change: int = abs(disk_change)
 
 # very often disk_usage_pcent will have a val of 0% when very small changes have been made. This will be re-defined as <1%
-if disk_usage_pcent == 0 and disk_change != 0:
-    disk_usage_pcent: str = '< 1'
-else:
-    disk_usage_pcent: str = '0'
+if disk_usage_pcent == 0:
+    if disk_change == 0:
+        disk_usage_pcent: str = '0'  # No changes were made
+    else:
+        disk_usage_pcent: str = f'< 1'  # A very small change was made
 
 
 logger.warning(f'''
@@ -283,7 +286,7 @@ logger.warning(f'''
     Change on Disk: {sign}{byte_sizer(disk_change)} ({disk_usage_pcent}%)
            Dry-Run: {dry_run}
     
-    {byte_sizer(backup_vol.disk_available())} remaining on backup disk.
+    {byte_sizer(disk_availability_end)} remaining on backup disk.
     Backup disk usage is at {disk_usage_end}%.
 ''')
 
