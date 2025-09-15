@@ -275,7 +275,7 @@ if disk_usage_pcent == 0:
     if disk_change == 0:
         disk_usage_pcent: str = '0'  # No changes were made
     else:
-        disk_usage_pcent: str = f'< 1'  # A very small change was made
+        disk_usage_pcent: str = '< 1'  # A very small change was made
 
 
 logger.warning(f'''
