@@ -10,7 +10,7 @@ from time import sleep
 import pandas as pd
 import sqlite3
 from zm_lib import (
-    disk_uuid, log_file_name, mount_point, zm_size_db, keep_days, zm_dir, save_dir, logger, ZmHelper,
+    disk_uuid, log_file_name, mount_point, db_file, keep_days, zm_dir, save_dir, logger, ZmHelper,
     delete_days, max_threads, allow_delete, allow_move, date_fmt, allow_unmount, camera_caches
 )
 
@@ -96,8 +96,8 @@ if allow_delete:
     logger.info(f"Searching {save_dir} for save_dir older than {time_threshold.strftime('%Y-%m-%d')} to delete.")
 
 
-with sqlite3.connect(zm_size_db) as conn:
-    df = pd.read_sql('select * from zm_sizes', conn)
+with sqlite3.connect(db_file) as con:
+    df = pd.read_sql('select * from zm_sizes', con)
 
 delete_size: int = 0
 
